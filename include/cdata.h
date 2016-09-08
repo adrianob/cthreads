@@ -19,6 +19,7 @@
 extern bool first_run;
 extern int last_used_tid;
 
+void update_threads(void);
 /* NÃO ALTERAR ESSA struct */
 typedef struct s_TCB { 
 	int		tid; 		// identificador da thread
