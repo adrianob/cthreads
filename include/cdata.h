@@ -7,12 +7,19 @@
 #ifndef __cdata__
 #define __cdata__
 
+#include <stdbool.h>
+#include <ucontext.h>
+
 #define	PROCST_CRIACAO	0
 #define	PROCST_APTO	1
 #define	PROCST_EXEC	2
 #define	PROCST_BLOQ	3
 #define	PROCST_TERMINO	4
 
+extern bool first_run;
+extern int last_used_tid;
+
+void update_threads(void);
 /* NÃO ALTERAR ESSA struct */
 typedef struct s_TCB { 
 	int		tid; 		// identificador da thread
