@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <ucontext.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <stdio.h>
 #include "../include/support.h"
 #include "../include/cthread.h"
@@ -8,24 +9,32 @@
 
 
 bool first_run = true;
+bool executing = true;
 int last_used_tid = 0;
-TCB_t *current_thread = NULL;//thread currently executing
+TCB_t current_thread;//thread currently executing
 FILA2 ready_list;
 
 void * printInt(void *length){
-  int i;
-  for(i = 0; i<*((int *)length);i++)
-	printf("%d", i);
+  printf("funcao %d\n", 5);
+  /*
+    int i;
+    for(i = 0; i<*((int *)length);i++)
+    printf("%d\n", i);
+  */
+  return;
 }
 
 int main(int argc, const char *argv[]) {
-  int x=4;
-  int z=CreateFila2(&ready_list);
-  ccreate(printInt, (void*)&x);
+  int x;
+  int pid = ccreate(printInt, (void *)&x);
+  printf("pid1 %d\n", pid);
+  cjoin(pid);
+  printf("exiting main\n");
   return 0;
 }
 
 int ccreate (void *(*start)(void *), void *arg) {
+  if(first_run){ update_threads(); }
   TCB_t thread;
   ucontext_t context, main_context;
 
@@ -48,38 +57,48 @@ int ccreate (void *(*start)(void *), void *arg) {
   AppendFila2(&ready_list, &thread);
 
   getcontext(&main_context);
-  update_threads();
-  return -1;
-}
-
-int cyield(void){
-  TCB_t thread = *current_thread;
-  (&thread)->state = PROCST_APTO;
-  AppendFila2(&ready_list, &thread);
-  current_thread = NULL;
-
-  update_threads();
-  return -1;
+  return thread.tid;
 }
 
 int cjoin(int tid){
-  return -1;
+  FirstFila2(&ready_list);
+  AppendFila2(&ready_list, &current_thread);
+  executing = false;
+
+  TCB_t next_thread, iter_thread;
+
+  FirstFila2(&ready_list);
+  do {
+    iter_thread = *((TCB_t *)GetAtIteratorFila2(&ready_list));
+    if(GetAtIteratorFila2(&ready_list) != NULL){
+      if(iter_thread.tid == tid){
+        next_thread = iter_thread;
+	break;
+      }}
+  } while(NextFila2(&ready_list) == 0);
+
+  DeleteAtIteratorFila2(&ready_list);
+  next_thread.state = PROCST_EXEC;
+  current_thread = next_thread;
+  executing = true;
+  setcontext(&(current_thread.context));
+  return 0;
 }
 
 void update_threads(void){
-  if(first_run){//do this for all library functions
+  if(first_run){
+    CreateFila2(&ready_list);
     TCB_t main_thread;
 
     main_thread.tid = 0;
-    main_thread.state = PROCST_CRIACAO;
+    main_thread.state = PROCST_APTO;
     main_thread.ticket = Random2();
-    getcontext(&(main_thread.context));
-
-    AppendFila2(&ready_list, &main_thread);
     first_run = false;
+    getcontext(&(main_thread.context));
+    current_thread = main_thread;
   }
 
-  if (!current_thread) {//CPU is free
+  if (!executing) {//CPU is free, execute next thread in ready list
     unsigned int new_ticket = Random2();
     TCB_t *next_thread = NULL;
 
@@ -89,8 +108,20 @@ void update_threads(void){
 
     //TODO run thread with tid closest to new_ticket
     next_thread->state = PROCST_EXEC;
-    current_thread = next_thread;
-    setcontext(&(next_thread->context));
+    current_thread = *next_thread;
+    setcontext(&(current_thread.context));
   }
 }
+
+/*
+int cyield(void){
+  TCB_t thread = *current_thread;
+  (&thread)->state = PROCST_APTO;
+  AppendFila2(&ready_list, &thread);
+  current_thread = NULL;
+
+  update_threads();
+  return 0;
+}
+*/
 
