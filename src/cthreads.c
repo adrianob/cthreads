@@ -125,3 +125,31 @@ int cyield(void){
 }
 */
 
+/*
+int csignal(csem_t *sem){
+  return -1;
+}
+*/
+int cidentify(char *name, int size){
+   char *str = "Adriano Carniel Benin\t\t Numero = \nGabriel Alexandre Zillmer\t Numero = \nLucas Valandro da Rocha\t\t Numero = 00243675";
+   strncpy(name,str,size - 1);
+   if(strcmp(name,str) == 0)
+    return 0;
+   else return -1;
+}
+/*
+FILA2 FilaSemaforo;
+
+int csem_init(csem_t *sem, int count)
+{
+  int init = CreateFila2(&FilaSemaforo);
+  if(init < 0)
+    return ERRO;
+
+  csem_t *sem = (csem_t*)malloc(sizeof(csem_t));
+  sem->count = 1;
+  //sem->fila = *FilaSemaforo;
+
+  return OK;
+}
+*/
