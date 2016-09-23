@@ -8,7 +8,7 @@
 #define OK    0
 #define ERRO -1
 
-FILA2 FilaSemaforo;
+
 
 int csem_init(csem_t *sem, int count)
 {
@@ -16,7 +16,7 @@ int csem_init(csem_t *sem, int count)
   if(init != 0)
     return ERRO;
 
-  csem_t *sem = (csem_t*)malloc(sizeof(csem_t));
+  *sem = (csem_t*)malloc(sizeof(csem_t));
   sem->count = 1;
   sem->fila = *FilaSemaforo;
 

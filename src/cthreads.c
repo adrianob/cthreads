@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdio.h>
+#inculde <string.h>
 #include "../include/support.h"
 #include "../include/cthread.h"
 #include "../include/cdata.h"
@@ -13,6 +14,7 @@ bool executing = true;
 int last_used_tid = 0;
 TCB_t current_thread;//thread currently executing
 FILA2 ready_list;
+FILA2 sem_list;
 
 void * printInt(void *length){
   printf("funcao %d\n", 5);
@@ -30,7 +32,7 @@ int main(int argc, const char *argv[]) {
   printf("pid1 %d\n", pid);
   cjoin(pid);
   printf("exiting main\n");
-  return 0;
+  return OK;
 }
 
 int ccreate (void *(*start)(void *), void *arg) {
@@ -82,7 +84,7 @@ int cjoin(int tid){
   current_thread = next_thread;
   executing = true;
   setcontext(&(current_thread.context));
-  return 0;
+  return OK;
 }
 
 void update_threads(void){
@@ -121,35 +123,55 @@ int cyield(void){
   current_thread = NULL;
 
   update_threads();
-  return 0;
+  return OK;
 }
 */
 
-/*
-int csignal(csem_t *sem){
-  return -1;
-}
-*/
 int cidentify(char *name, int size){
-   char *str = "Adriano Carniel Benin\t\t Numero = \nGabriel Alexandre Zillmer\t Numero = \nLucas Valandro da Rocha\t\t Numero = 00243675";
+   char *str = "Adriano Carniel Benin\t\t Numero = 00 \nGabriel Alexandre Zillmer\t Numero = 00243683 \nLucas Valandro da Rocha\t\t Numero = 00243675";
    strncpy(name,str,size - 1);
    if(strcmp(name,str) == 0)
-    return 0;
-   else return -1;
+    return OK;
+   else return ERRO;
 }
 /*
-FILA2 FilaSemaforo;
 
 int csem_init(csem_t *sem, int count)
 {
-  int init = CreateFila2(&FilaSemaforo);
-  if(init < 0)
+  int init = CreateFila2(&sem_list);
+  if(init != 0)
     return ERRO;
 
-  csem_t *sem = (csem_t*)malloc(sizeof(csem_t));
+  sem = (csem_t*)malloc(sizeof(csem_t));
   sem->count = 1;
-  //sem->fila = *FilaSemaforo;
+  sem->fila = *sem_list;
 
+  return OK;
+}
+*/
+
+/*
+int cwait( csem_t *sem ){
+  TCB_t thread = *current_thread;
+  sem->count = sem->count - 1;
+  if(sem->count < 0){ //CPU is free them we associate a thread.
+    //sortear
+    current_thread = NextFila2(&sem_list);
+  }
+  else{ //(if sem->count >= 0) them thread needs to be blocked.
+  (&thread)->state = PROCST_BLOQ;
+    AppendFila2(&sem_list, &current_thread);
+    current_thread = NULL;
+  }
+}
+*/
+/*
+int csignal( csem_t *sem ){
+  TCB_t thread = *current_thread;
+  sem->count = count++;
+  if(sem->count < 0){
+    update_threads();
+  }
   return OK;
 }
 */
