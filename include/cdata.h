@@ -17,6 +17,8 @@
 #define	PROCST_TERMINO	4
 #define OK    0
 #define ERRO -1
+#define TRUE 1
+#define FALSE 0
 
 extern bool first_run;
 extern int last_used_tid;

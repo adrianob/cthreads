@@ -1,4 +1,3 @@
-#include <stdbool.h>
 #include <ucontext.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -9,8 +8,8 @@
 #include "../include/cdata.h"
 
 
-bool first_run = true;
-bool executing = true;
+first_run = TRUE;
+executing = TRUE;
 int last_used_tid = 0;
 TCB_t current_thread;//thread currently executing
 FILA2 ready_list;
@@ -65,7 +64,7 @@ int ccreate (void *(*start)(void *), void *arg) {
 int cjoin(int tid){
   FirstFila2(&ready_list);
   AppendFila2(&ready_list, &current_thread);
-  executing = false;
+  executing = FALSE;
 
   TCB_t next_thread, iter_thread;
 
@@ -82,7 +81,7 @@ int cjoin(int tid){
   DeleteAtIteratorFila2(&ready_list);
   next_thread.state = PROCST_EXEC;
   current_thread = next_thread;
-  executing = true;
+  executing = TRUE;
   setcontext(&(current_thread.context));
   return OK;
 }
@@ -90,18 +89,18 @@ int cjoin(int tid){
 void update_threads(void){
   if(first_run){
     CreateFila2(&ready_list);
-    TCB_t main_thread;
+    TCB_t *main_thread;
 
-    main_thread.tid = 0;
-    main_thread.state = PROCST_APTO;
-    main_thread.ticket = Random2();
-    first_run = false;
-    getcontext(&(main_thread.context));
+    main_thread->tid = 0;
+    main_thread->state = PROCST_APTO;
+    main_thread->ticket = Random2();
+    first_run = FALSE;
+    getcontext(&(main_thread->context));
     current_thread = main_thread;
   }
 
   if (!executing) {//CPU is free, execute next thread in ready list
-    unsigned int new_ticket = Random2();
+    //unsigned int new_ticket = Random2(); never used.
     TCB_t *next_thread = NULL;
 
     FirstFila2(&ready_list);
@@ -110,8 +109,8 @@ void update_threads(void){
 
     //TODO run thread with tid closest to new_ticket
     next_thread->state = PROCST_EXEC;
-    current_thread = *next_thread;
-    setcontext(&(current_thread.context));
+    current_thread = next_thread;
+    setcontext(&(current_thread->context));
   }
 }
 
@@ -134,7 +133,6 @@ int cidentify(char *name, int size){
     return OK;
    else return ERRO;
 }
-/*
 
 int csem_init(csem_t *sem, int count)
 {
@@ -149,28 +147,25 @@ int csem_init(csem_t *sem, int count)
   return OK;
 }
 
-*/
-
-/*
 int cwait(csem_t *sem){
   TCB_t thread = *current_thread;
 
   sem->count = sem->count - 1;
   if(sem->count > 0){ //CPU is free them we associate a thread using a ticket number.
     if(FirstFila2(&ready_list) == 0){ //!!
-      executing = 0;
+      executing = FALSE;
       update_threads();
-      executing = 1;
+      executing = TRUE;
     }
     else return ERRO;
   }
   else{ //The thread needs to be blocked.
     (&thread)->state = PROCST_BLOQ;
-    if(AppendFila2(&sem->fila, &thread) == 0){
+    if(AppendFila2(sem->fila, &thread) == 0){
       if(FirstFila2(&ready_list) == 0){
-        executing = 0;
+        executing = FALSE;
         update_threads();
-        executing = 1;
+        executing = TRUE;
       }
       else return ERRO;
     }
@@ -178,8 +173,8 @@ int cwait(csem_t *sem){
   }
   return OK;
 }
-*/
-/*
+
+
 int csignal(csem_t *sem){
   TCB_t thread = *current_thread;
 
@@ -195,4 +190,3 @@ int csignal(csem_t *sem){
   }
   return OK;
 }
-*/
