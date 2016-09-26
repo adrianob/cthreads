@@ -138,24 +138,26 @@ int cidentify(char *name, int size){
 
 int csem_init(csem_t *sem, int count)
 {
-  FILA2 block_list; //Each (csem_t *sem) has one block_list
-  int init = CreateFila2(&block_list);
+  FILA2 *block_list = NULL; //Each (csem_t *sem) has one block_list
+  int init = CreateFila2(block_list);
   if(init != 0)
     return ERRO;
   sem = (csem_t*)malloc(sizeof(csem_t));
   sem->count = count;
-  sem->fila = *block_list;
+  sem->fila = block_list;
 
   return OK;
 }
+
 */
 
 /*
 int cwait(csem_t *sem){
   TCB_t thread = *current_thread;
+
   sem->count = sem->count - 1;
   if(sem->count > 0){ //CPU is free them we associate a thread using a ticket number.
-    if(FirstFila2(&ready_list) == 0){
+    if(FirstFila2(&ready_list) == 0){ //!!
       executing = 0;
       update_threads();
       executing = 1;
@@ -179,13 +181,12 @@ int cwait(csem_t *sem){
 */
 /*
 int csignal(csem_t *sem){
-  TCB_t thread;
+  TCB_t thread = *current_thread;
 
-  sem->count = count++;
-
+  sem->count += 1;
   if(sem->count > 0){ //CPU is free, so the first of the blocked_list needs to pass to the ready_list
-    if(FirstFila2(&sem->fila) == 0){
-      thread = *((TCB_t *)GetAtIteratorFila2(&sem->list));
+    if(FirstFila2(sem->fila) == 0){));
+      thread = *((TCB_t *)GetAtIteratorFila2(sem->list));
       if(AppendFila2(&ready_list, &thread) == 0)
         return OK;
       else return ERRO;
