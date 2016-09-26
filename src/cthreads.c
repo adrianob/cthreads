@@ -156,15 +156,19 @@ int cwait(csem_t *sem){
   sem->count = sem->count - 1;
   if(sem->count > 0){ //CPU is free them we associate a thread using a ticket number.
     if(FirstFila2(&ready_list) == 0){
-      thread = *((TCB_t *)GetAtIteratorFila2(&ready_list));
+      executing = 0;
+      update_threads();
+      executing = 1;
     }
     else return ERRO;
   }
-  else{ //Them the thread needs to be blocked.
+  else{ //The thread needs to be blocked.
     (&thread)->state = PROCST_BLOQ;
-    if(AppendFila2(&sem->fila, &current_thread) == 0){
+    if(AppendFila2(&sem->fila, &thread) == 0){
       if(FirstFila2(&ready_list) == 0){
-        thread = *((TCB_t *)GetAtIteratorFila2(&ready_list));
+        executing = 0;
+        update_threads();
+        executing = 1;
       }
       else return ERRO;
     }
