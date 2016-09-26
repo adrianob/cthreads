@@ -14,7 +14,7 @@ bool executing = true;
 int last_used_tid = 0;
 TCB_t current_thread;//thread currently executing
 FILA2 ready_list;
-FILA2 sem_list;
+
 
 void * printInt(void *length){
   printf("funcao %d\n", 5);
@@ -138,39 +138,47 @@ int cidentify(char *name, int size){
 
 int csem_init(csem_t *sem, int count)
 {
-  int init = CreateFila2(&sem_list);
+  FILA2 block_list; //Each (csem_t *sem) has one block_list
+  int init = CreateFila2(&block_list);
   if(init != 0)
     return ERRO;
-
   sem = (csem_t*)malloc(sizeof(csem_t));
-  sem->count = 1;
-  sem->fila = *sem_list;
+  sem->count = count;
+  sem->fila = *block_list;
 
   return OK;
 }
 */
 
 /*
-int cwait( csem_t *sem ){
+int cwait(csem_t *sem){
   TCB_t thread = *current_thread;
   sem->count = sem->count - 1;
-  if(sem->count < 0){ //CPU is free them we associate a thread.
-    //sortear
-    current_thread = NextFila2(&sem_list);
+  if(sem->count > 0){ //CPU is free them we associate a thread using a ticket number.
+    //raffling_ticket(&ready_list);
+
   }
-  else{ //(if sem->count >= 0) them thread needs to be blocked.
-  (&thread)->state = PROCST_BLOQ;
-    AppendFila2(&sem_list, &current_thread);
+  else{ //Them the thread needs to be blocked.
+    (&thread)->state = PROCST_BLOQ;
+    AppendFila2(&sem->fila, &current_thread);
     current_thread = NULL;
   }
 }
 */
 /*
-int csignal( csem_t *sem ){
-  TCB_t thread = *current_thread;
+int csignal(csem_t *sem){
+  TCB_t thread;
+
   sem->count = count++;
-  if(sem->count < 0){
-    update_threads();
+
+  if(sem->count > 0){ //CPU is free, so the first of the blocked_list needs to pass to the ready_list
+    if(FirstFila2(&sem->fila) == 0){
+      thread = *((TCB_t *)GetAtIteratorFila2(&sem->list));
+      if(AppendFila2(&ready_list, &thread) == 0)
+        return OK;
+      else return ERRO;
+    }
+    else return ERRO;
   }
   return OK;
 }
