@@ -9,6 +9,7 @@
 
 void initialize(void);
 void * finish_thread(void);
+void scheduler(void);
 
 bool first_run = true;
 bool executing = true;
@@ -25,7 +26,6 @@ void* func0(void *arg) {
 }
 
 void* func1(void *arg) {
- printf("%d\n", current_thread.tid);
 	printf("Eu sou a thread ID1 imprimindo %d\n", *((int *)arg));
 }
 
@@ -47,10 +47,27 @@ int main(int argc, const char *argv[]) {
 }
 
 void * finish_thread(void) {
+  //remove from blocked list if same tid
+  TCB_t *iter_thread;
+  int * iter_id;
+  FirstFila2(&blocked_list);
+  FirstFila2(&blocked_ids);
+  do {
+    iter_id = ((int *)GetAtIteratorFila2(&blocked_ids));
+    iter_thread = ((TCB_t *)GetAtIteratorFila2(&blocked_list));
+    if(GetAtIteratorFila2(&blocked_list) != NULL && GetAtIteratorFila2(&blocked_ids) != NULL){
+      if(*iter_id == current_thread.tid){
+        DeleteAtIteratorFila2(&blocked_list);
+        DeleteAtIteratorFila2(&blocked_ids);
+        iter_thread->state = PROCST_APTO;
+        AppendFila2(&ready_list, iter_thread);
+        break;
+      }
+    }
+  } while(NextFila2(&blocked_list) == 0 && NextFila2(&blocked_ids) == 0);
 	executing = false;
-   printf("finish");
-	update_threads();
-return NULL;
+	scheduler();
+  return NULL;
 }
 
 void initialize(void){
@@ -63,91 +80,71 @@ void initialize(void){
 	finish_context->uc_link = NULL;
 	makecontext(finish_context, (void (*)(void))finish_thread, 0);
 
-    CreateFila2(&ready_list);
-    CreateFila2(&blocked_list);
-    CreateFila2(&blocked_ids);
-    TCB_t main_thread;
+  CreateFila2(&ready_list);
+  CreateFila2(&blocked_list);
+  CreateFila2(&blocked_ids);
+  TCB_t * main_thread = (TCB_t *)malloc(sizeof(TCB_t));
 
-    main_thread.tid = 0;
-    main_thread.state = PROCST_APTO;
-    main_thread.ticket = Random2();
-    first_run = false;
-    getcontext(&(main_thread.context));
-    current_thread = main_thread;
+  main_thread->tid = 0;
+  main_thread->state = PROCST_APTO;
+  main_thread->ticket = Random2();
+  first_run = false;
+  getcontext(&(main_thread->context));
+  current_thread = *main_thread;
 }
 
 int ccreate (void *(*start)(void *), void *arg) {
   if(first_run){ initialize(); }
-  TCB_t thread;
-  ucontext_t context;
+  TCB_t *thread = (TCB_t *) malloc(sizeof(TCB_t));
+  ucontext_t * context = malloc(sizeof(ucontext_t));
 
   char function_stack[SIGSTKSZ];
 
-  thread.tid = ++last_used_tid;
-  thread.state = PROCST_CRIACAO;
-  thread.ticket = Random2();
+  thread->tid = ++last_used_tid;
+  thread->state = PROCST_CRIACAO;
+  thread->ticket = Random2();
 
-  getcontext(&context);
+  getcontext(context);
 
-  context.uc_stack.ss_sp   = function_stack;
-  context.uc_stack.ss_size = sizeof(function_stack);
-  context.uc_link          = finish_context;
+  context->uc_stack.ss_sp   = function_stack;
+  context->uc_stack.ss_size = sizeof(function_stack);
+  context->uc_link          = finish_context;
 
-  makecontext(&context, (void (*)(void))start, 1, arg);
+  makecontext(context, (void (*)(void))start, 1, arg);
 
-  thread.state = PROCST_APTO;
-  thread.context = context;
-  AppendFila2(&ready_list, &thread);
+  thread->state = PROCST_APTO;
+  thread->context = *context;
+  AppendFila2(&ready_list, thread);
 
-  update_threads();
-  return thread.tid;
+  return thread->tid;
 }
 
 int cjoin(int tid){
+  if(first_run){ initialize(); }
   int *id = malloc(sizeof(int));
-  id = &tid;
+  *id = tid;
   FirstFila2(&blocked_list);
   AppendFila2(&blocked_list, &current_thread);
   FirstFila2(&blocked_ids);
   AppendFila2(&blocked_ids, id);
   executing = false;
 
-  update_threads();
+  scheduler();
   return 0;
 }
 
-void update_threads(void){
+void scheduler(void){
   if (!executing) {//CPU is free, execute next thread in ready list
     //unsigned int new_ticket = Random2();
     TCB_t *chosen_thread = NULL;
 
     //TODO run thread with tid closest to new_ticket
     FirstFila2(&ready_list);
-    chosen_thread = GetAtIteratorFila2(&ready_list);
+    chosen_thread = (TCB_t *)GetAtIteratorFila2(&ready_list);
     DeleteAtIteratorFila2(&ready_list);
 
     chosen_thread->state = PROCST_EXEC;
     current_thread = *chosen_thread;
-    executing = true;
-
-  //remove from blocked list if same tid
-  TCB_t *iter_thread;
-  int * iter_id;
-  FirstFila2(&blocked_list);
-  FirstFila2(&blocked_ids);
-  do {
-    iter_id = ((int *)GetAtIteratorFila2(&blocked_ids));
-    iter_thread = ((TCB_t *)GetAtIteratorFila2(&blocked_list));
-    if(GetAtIteratorFila2(&blocked_list) != NULL && GetAtIteratorFila2(&blocked_ids) != NULL){
-      if(*iter_id == current_thread.tid){
-	  DeleteAtIteratorFila2(&blocked_list);
-	  DeleteAtIteratorFila2(&blocked_ids);
-	  iter_thread->state = PROCST_APTO;
-	  AppendFila2(&ready_list, iter_thread);
-	break;
-      }
-}
-  } while(NextFila2(&blocked_list) == 0 && NextFila2(&blocked_ids) == 0);
 
    executing = true;
     setcontext(&(chosen_thread->context));
@@ -155,8 +152,7 @@ void update_threads(void){
 }
 
 int cyield(void){
-  update_threads();
+  if(first_run){ initialize(); }
+  scheduler();
   return 0;
 }
-
-
