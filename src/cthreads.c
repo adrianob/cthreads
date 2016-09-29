@@ -21,29 +21,6 @@ FILA2 ready_list;
 FILA2 blocked_list;
 FILA2 blocked_ids;
 
-void* func0(void *arg) {
-	printf("Eu sou a thread ID0 imprimindo %d\n", *((int *)arg));
-	return 0;
-}
-
-void* func1(void *arg) {
-	printf("Eu sou a thread ID1 imprimindo %d\n", *((int *)arg));
-	return 0;
-}
-
-int main(void)
-{
-
-int	id0, id1;
-int i;
-
-id0 = ccreate(func0, (void *)&i);//id 1
-id1 = ccreate(func1, (void *)&i);//id 1
-cjoin(id1);
-    return 0;
-}
-
-
 void * finish_thread(void) {
   //remove from blocked list if same tid
   TCB_t *iter_thread = (TCB_t *) malloc(sizeof(TCB_t));
@@ -102,7 +79,7 @@ void initialize(void){
   finish_context.uc_stack.ss_sp   = (char*) malloc(stackSize);
   finish_context.uc_stack.ss_size = stackSize;
 
-  makecontext(&finish_context, (void (*)(void)) finish_thread, 0); 
+  makecontext(&finish_context, (void (*)(void)) finish_thread, 0);
 }
 
 int ccreate (void *(*start)(void *), void *arg) {
@@ -249,4 +226,3 @@ int csignal(csem_t *sem){
   }
   return OK;
 }
-
