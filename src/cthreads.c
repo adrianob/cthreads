@@ -185,7 +185,7 @@ int cwait(csem_t *sem){
   if(sem->count > 0){ //CPU is free them we associate a thread using a ticket number.
     if(FirstFila2(&ready_list) == 0){ //!!
       executing = FALSE;
-      update_threads();
+      scheduler();
       executing = TRUE;
     }
     else return ERRO;
@@ -195,7 +195,7 @@ int cwait(csem_t *sem){
     if(AppendFila2(sem->fila, &thread) == 0){
       if(FirstFila2(&ready_list) == 0){
         executing = FALSE;
-        update_threads();
+        scheduler();
         executing = TRUE;
       }
       else return ERRO;
