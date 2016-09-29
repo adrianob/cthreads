@@ -21,6 +21,7 @@ FILA2 ready_list;
 FILA2 blocked_list;
 FILA2 blocked_ids;
 
+
 void * finish_thread(void) {
   //remove from blocked list if same tid
   TCB_t *iter_thread = (TCB_t *) malloc(sizeof(TCB_t));
@@ -43,15 +44,16 @@ void * finish_thread(void) {
 
   FirstFila2(&blocked_list);
   int i;
+  int end;
   for(i = 0; i < iterations; i++){
-    *iter_thread = *((TCB_t *)GetAtIteratorFila2(&blocked_list));
+    iter_thread = ((TCB_t *)GetAtIteratorFila2(&blocked_list));
     if(iter_thread != NULL ){
         DeleteAtIteratorFila2(&blocked_list);
         iter_thread->state = PROCST_APTO;
         AppendFila2(&ready_list, iter_thread);
         break;
     }
-    NextFila2(&blocked_list);
+    end = NextFila2(&blocked_list);
   }
 
   executing = FALSE;
@@ -79,7 +81,7 @@ void initialize(void){
   finish_context.uc_stack.ss_sp   = (char*) malloc(stackSize);
   finish_context.uc_stack.ss_size = stackSize;
 
-  makecontext(&finish_context, (void (*)(void)) finish_thread, 0);
+  makecontext(&finish_context, (void (*)(void)) finish_thread, 0); 
 }
 
 int ccreate (void *(*start)(void *), void *arg) {
@@ -141,14 +143,16 @@ void scheduler(void){
   do {
     thread = (TCB_t *)GetAtIteratorFila2(&ready_list);
     if(thread != NULL && abs(thread->ticket - new_ticket) < closest){
+      closest = abs(thread->ticket - new_ticket);
       current_thread = *thread;
     }
   } while( NextFila2(&ready_list) == 0);
 
+
   FirstFila2(&ready_list);
   do {
     thread = ((TCB_t *)GetAtIteratorFila2(&ready_list));
-    if(thread->ticket == current_thread.ticket){
+    if(thread != NULL && thread->ticket == current_thread.ticket){
 	    DeleteAtIteratorFila2(&ready_list);
     }
   } while( NextFila2(&ready_list) == 0);
@@ -161,6 +165,11 @@ void scheduler(void){
 
 int cyield(void){
   if(first_run){ initialize(); }
+  TCB_t *thread = (TCB_t *) malloc(sizeof(TCB_t));
+  *thread = current_thread;
+  thread->state = PROCST_APTO;
+  AppendFila2(&ready_list, thread);
+  executing = FALSE;
   scheduler();
   return 0;
 }
@@ -226,3 +235,5 @@ int csignal(csem_t *sem){
   }
   return OK;
 }
+
+
