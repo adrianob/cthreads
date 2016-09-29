@@ -1,5 +1,5 @@
 /*
- * cdata.h: arquivo de inclusão de uso apenas na geração da libpithread
+ * cdata.h: arquivo de inclusï¿½o de uso apenas na geraï¿½ï¿½o da libpithread
  *
  * Esse arquivo pode ser modificado. ENTRETANTO, deve ser utilizada a TCB fornecida
  *
@@ -15,18 +15,22 @@
 #define	PROCST_EXEC	2
 #define	PROCST_BLOQ	3
 #define	PROCST_TERMINO	4
+#define OK    0
+#define ERRO -1
+#define TRUE 1
+#define FALSE 0
 
 extern bool first_run;
 extern int last_used_tid;
 
 void update_threads(void);
-/* NÃO ALTERAR ESSA struct */
-typedef struct s_TCB { 
+/* Nï¿½O ALTERAR ESSA struct */
+typedef struct s_TCB {
 	int		tid; 		// identificador da thread
 	int		state;		// estado em que a thread se encontra
-					// 0: Criação; 1: Apto; 2: Execução; 3: Bloqueado e 4: Término
+					// 0: Criaï¿½ï¿½o; 1: Apto; 2: Execuï¿½ï¿½o; 3: Bloqueado e 4: Tï¿½rmino
 	int 		ticket;		// "bilhete" de loteria da thread, para uso do escalonador
-	ucontext_t 	context;	// contexto de execução da thread (SP, PC, GPRs e recursos) 
-} TCB_t; 
+	ucontext_t 	context;	// contexto de execuï¿½ï¿½o da thread (SP, PC, GPRs e recursos)
+} TCB_t;
 
 #endif
