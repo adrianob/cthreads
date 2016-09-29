@@ -21,8 +21,12 @@
 
 extern int first_run;
 extern int last_used_tid;
-
+void initialize(void);
+void * finish_thread(void);
+void scheduler(void);
+unsigned int Random256(void);
 void update_threads(void);
+
 /* N�O ALTERAR ESSA struct */
 typedef struct s_TCB {
 	int		tid; 		// identificador da thread

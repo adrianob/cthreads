@@ -1,6 +1,7 @@
 #include <ucontext.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 #include "../include/support.h"
@@ -9,12 +10,6 @@
 
 
 #define stackSize SIGSTKSZ
-
-void initialize(void);
-void * finish_thread(void);
-void scheduler(void);
-
-
 
 int first_run = TRUE;
 int executing = TRUE;
@@ -95,7 +90,7 @@ void initialize(void){
 
   main_thread.tid = 0;
   main_thread.state = PROCST_APTO;
-  main_thread.ticket = Random2();
+  main_thread.ticket = Random256();
   first_run = FALSE;
 
   getcontext(&main_thread.context);
@@ -117,7 +112,7 @@ int ccreate (void *(*start)(void *), void *arg) {
 
   thread->tid = ++last_used_tid;
   thread->state = PROCST_CRIACAO;
-  thread->ticket = Random2();
+  thread->ticket = Random256();
 
   getcontext(context);
 
@@ -153,12 +148,34 @@ int cjoin(int tid){
   return 0;
 }
 
+unsigned int Random256(void){
+  unsigned int rand = Random2();
+  float avg = (float)rand/65535;
+  rand = (int) (avg*255);
+  return rand;
+}
 void scheduler(void){
   if (!executing) {//CPU is free, execute next thread in ready list
-    //unsigned int new_ticket = Random2();
+    unsigned int new_ticket = Random256();
+  TCB_t * thread;
+   int closest = 64000;
+
     FirstFila2(&ready_list);
-    current_thread = *((TCB_t *)GetAtIteratorFila2(&ready_list));
-    DeleteAtIteratorFila2(&ready_list);
+  do {
+    thread = (TCB_t *)GetAtIteratorFila2(&ready_list);
+    if(thread != NULL && abs(thread->ticket - new_ticket) < closest){
+      current_thread = *thread;
+    }
+  } while( NextFila2(&ready_list) == 0);
+
+  FirstFila2(&ready_list);
+  do {
+    thread = ((TCB_t *)GetAtIteratorFila2(&ready_list));
+    if(thread->ticket == current_thread.ticket){
+	    DeleteAtIteratorFila2(&ready_list);
+    }
+  } while( NextFila2(&ready_list) == 0);
+
     current_thread.state = PROCST_EXEC;
    executing = TRUE;
   setcontext(&current_thread.context);
