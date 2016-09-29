@@ -19,7 +19,8 @@ int first_run = TRUE;
 int executing = TRUE;
 int last_used_tid = 0;
 TCB_t current_thread;//thread currently executing
-ucontext_t * finish_context;
+TCB_t main_thread;
+ucontext_t finish_context;
 FILA2 ready_list;
 FILA2 blocked_list;
 FILA2 blocked_ids;
@@ -36,24 +37,29 @@ void* func1(void *arg) {
 	return 0;
 }
 
+int main(void)
+{
 
-
-int main(int argc, const char *argv[]) {
 	int	id0, id1;
 	int i;
 
 	id0 = ccreate(func0, (void *)&i);
-	id1 = ccreate(func1, (void *)&i);
+	cjoin(id0);
+/*
 
 	printf("Eu sou a main após a criação de ID0 e ID1\n");
 
 	cjoin(id0);
 	cjoin(id1);
 	printf("Eu sou a main voltando para terminar o programa\n");
-  return 0;
+*/
+    return 0;
 }
 
+
 void * finish_thread(void) {
+printf("finish\n");
+ exit(1);
   //remove from blocked list if same tid
   TCB_t *iter_thread;
   int * iter_id;
@@ -79,32 +85,29 @@ void * finish_thread(void) {
 }
 
 void initialize(void){
-  char function_stack[SIGSTKSZ];
-	finish_context = (ucontext_t*) malloc (sizeof(ucontext_t));
+  char finish_stack[SIGSTKSZ]; 
 
-	getcontext(finish_context);
-  finish_context->uc_stack.ss_sp   = function_stack;
-  finish_context->uc_stack.ss_size = sizeof(function_stack);
-	finish_context->uc_link = NULL;
-	makecontext(finish_context, (void (*)(void))finish_thread, 0);
+  getcontext(&finish_context);
+
+  finish_context.uc_link          = NULL;
+  finish_context.uc_stack.ss_sp   = finish_stack;
+  finish_context.uc_stack.ss_size = sizeof(finish_stack);
+
+
+  makecontext(&finish_context, (void (*)(void)) finish_thread, 0); 
 
   CreateFila2(&ready_list);
   CreateFila2(&blocked_list);
   CreateFila2(&blocked_ids);
 
-  TCB_t * main_thread = (TCB_t *)malloc(sizeof(TCB_t));
-
-  main_thread->tid = 0;
-  main_thread->state = PROCST_APTO;
-  main_thread->ticket = Random2();
+  main_thread.tid = 0;
+  main_thread.state = PROCST_APTO;
+  main_thread.ticket = Random2();
   first_run = FALSE;
 
-  getcontext(&(main_thread->context));
-
-	current_thread = *main_thread;
+  getcontext(&(main_thread.context));
+  current_thread = main_thread;
 }
-
-
 
 int ccreate (void *(*start)(void *), void *arg) {
   if(first_run){ initialize(); }
@@ -120,7 +123,7 @@ int ccreate (void *(*start)(void *), void *arg) {
 
   context->uc_stack.ss_sp   = function_stack;
   context->uc_stack.ss_size = sizeof(function_stack);
-  context->uc_link          = finish_context;
+  context->uc_link          = &finish_context;
 
   makecontext(context, (void (*)(void))start, 1, arg);
 
@@ -130,46 +133,36 @@ int ccreate (void *(*start)(void *), void *arg) {
   return thread->tid;
 }
 
-
-
 int cjoin(int tid){
-
   if(first_run){ initialize(); }
+/*
+//PROBLEMA
   int *id = malloc(sizeof(int));
   *id = tid;
-  FirstFila2(&blocked_list);
-  AppendFila2(&blocked_list, &current_thread);
-  FirstFila2(&blocked_ids);
-  AppendFila2(&blocked_ids, id);
+  AppendFila2(&blocked_ids, (void*)id);
 
+  TCB_t * blocked_thread = (TCB_t *)malloc(sizeof(TCB_t));
+  blocked_thread = &current_thread;
+  AppendFila2(&blocked_list, (void *)blocked_thread);
+*/
   executing = FALSE;
-
-
 
   scheduler();
 
   return 0;
-
 }
 
 void scheduler(void){
   if (!executing) {//CPU is free, execute next thread in ready list
-
     //unsigned int new_ticket = Random2();
-    TCB_t *chosen_thread = NULL;
-    //TODO run thread with tid closest to new_ticket
     FirstFila2(&ready_list);
-    chosen_thread = (TCB_t *)GetAtIteratorFila2(&ready_list);
+    current_thread = *((TCB_t *)GetAtIteratorFila2(&ready_list));
     DeleteAtIteratorFila2(&ready_list);
-
-    chosen_thread->state = PROCST_EXEC;
-    current_thread = *chosen_thread;
-
-   executing = TRUE;
-    setcontext(&(chosen_thread->context));
+    current_thread.state = PROCST_EXEC;
+    executing = TRUE;
+    setcontext(&current_thread.context);
   }
 }
-
 
 int cyield(void){
   if(first_run){ initialize(); }
@@ -178,7 +171,7 @@ int cyield(void){
 }
 
 int cidentify(char *name, int size){
-   char *str = "Adriano Carniel Benin\t\t Numero = 00 \nGabriel Alexandre Zillmer\t Numero = 00243683 \nLucas Valandro da Rocha\t\t Numero = 00243675";
+   char *str = "Adriano Carniel Benin\t\t Numero = 00173464 \nGabriel Alexandre Zillmer\t Numero = 00243683 \nLucas Valandro da Rocha\t\t Numero = 00243675";
    strncpy(name,str,size - 1);
    if(strcmp(name,str) == 0)
     return OK;
@@ -197,8 +190,6 @@ int csem_init(csem_t *sem, int count)
 
   return OK;
 }
-
-
 
 int cwait(csem_t *sem){
   TCB_t thread = current_thread;
@@ -240,3 +231,4 @@ int csignal(csem_t *sem){
   }
   return OK;
 }
+

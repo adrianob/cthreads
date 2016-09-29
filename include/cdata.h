@@ -7,7 +7,6 @@
 #ifndef __cdata__
 #define __cdata__
 
-#include <stdbool.h>
 #include <ucontext.h>
 
 #define	PROCST_CRIACAO	0
@@ -20,7 +19,7 @@
 #define TRUE 1
 #define FALSE 0
 
-extern bool first_run;
+extern int first_run;
 extern int last_used_tid;
 
 void update_threads(void);
