@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdio.h>
-#inculde <string.h>
+#include <string.h>
 #include "../include/support.h"
 #include "../include/cthread.h"
 #include "../include/cdata.h"
